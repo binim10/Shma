@@ -32,7 +32,7 @@ jobs:
         run: chmod +x gradlew
 
       - name: Cache Gradle packages
-        uses: actions/cache@v3
+        uses: actions/cache@v4
         with:
           path: |
             ~/.gradle/caches
@@ -45,7 +45,7 @@ jobs:
         run: ./gradlew assembleDebug --stacktrace
 
       - name: Upload Debug APK
-        uses: actions/upload-artifact@v3
+        uses: actions/upload-artifact@v4
         with:
           name: zmanim-alarm-debug
           path: app/build/outputs/apk/debug/*.apk
@@ -76,7 +76,7 @@ jobs:
         run: chmod +x gradlew
 
       - name: Cache Gradle packages
-        uses: actions/cache@v3
+        uses: actions/cache@v4
         with:
           path: |
             ~/.gradle/caches
@@ -89,7 +89,7 @@ jobs:
         run: ./gradlew assembleRelease --stacktrace
 
       - name: Upload Release APK
-        uses: actions/upload-artifact@v3
+        uses: actions/upload-artifact@v4
         with:
           name: zmanim-alarm-release
           path: app/build/outputs/apk/release/*.apk
