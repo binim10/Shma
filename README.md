@@ -2,6 +2,26 @@
 
 A production-ready Android application that allows users to set alarms relative to "Sof Zman Kriyat Shema" (SZKS) based on their current GPS location.
 
+## 📥 Download APK
+
+### Option 1: Download from GitHub Actions (Recommended)
+1. Go to the [Actions tab](../../actions/workflows/build-apk.yml) of this repository
+2. Click on the latest successful workflow run (green checkmark)
+3. Scroll down to "Artifacts" section
+4. Download **zmanim-alarm-debug.apk**
+5. Transfer to your Android device and install
+
+**Note**: You may need to enable "Install from Unknown Sources" in your Android settings.
+
+### Option 2: Build Locally
+If you have Android Studio installed:
+```bash
+git clone <repository-url>
+cd Shma
+./gradlew assembleDebug
+```
+The APK will be in `app/build/outputs/apk/debug/`
+
 ## Features
 
 ### Core Functionality
