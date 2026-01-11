@@ -1,0 +1,40 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="app_name">Zmanim Alarm</string>
+
+    <!-- Main Screen -->
+    <string name="today_szks">Today\'s Sof Zman Kriyat Shema</string>
+    <string name="magen_avraham">Magen Avraham</string>
+    <string name="gra">Gra</string>
+    <string name="alarm_enabled">Alarm Enabled</string>
+    <string name="alarm_disabled">Alarm Disabled</string>
+    <string name="next_alarm">Next Alarm</string>
+    <string name="minutes_before">Minutes Before SZKS</string>
+    <string name="enable_alarm">Enable Zmanim Alarm</string>
+    <string name="calculating">Calculating...</string>
+
+    <!-- Permissions -->
+    <string name="location_permission_required">Location permission is required to calculate accurate Zmanim based on your current location.</string>
+    <string name="notification_permission_required">Notification permission is required to alert you when the alarm triggers.</string>
+    <string name="grant_permission">Grant Permission</string>
+    <string name="permission_denied">Permission Denied</string>
+
+    <!-- Alarm Ringing -->
+    <string name="time_for_shema">Time for Kriyat Shema!</string>
+    <string name="dismiss">Dismiss</string>
+    <string name="snooze">Snooze</string>
+    <string name="snooze_duration">Snooze for 5 minutes</string>
+
+    <!-- Location -->
+    <string name="location_unavailable">Location unavailable. Using last known location.</string>
+    <string name="enable_location">Please enable location services</string>
+
+    <!-- Errors -->
+    <string name="error_calculating_zmanim">Error calculating Zmanim. Please try again.</string>
+    <string name="error_scheduling_alarm">Error scheduling alarm. Please check permissions.</string>
+
+    <!-- Settings -->
+    <string name="settings">Settings</string>
+    <string name="about">About</string>
+    <string name="version">Version</string>
+</resources>
