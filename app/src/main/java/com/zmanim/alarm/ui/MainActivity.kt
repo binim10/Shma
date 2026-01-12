@@ -20,11 +20,14 @@ import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import com.zmanim.alarm.data.model.AlarmProviderType
 import com.zmanim.alarm.ui.theme.ZmanimAlarmTheme
+import com.zmanim.alarm.util.AlarmProviderUtil
 import dagger.hilt.android.AndroidEntryPoint
 import java.time.format.DateTimeFormatter
 
@@ -155,6 +158,13 @@ fun MainScreen(
                     // Zmanim Display Card
                     ZmanimCard(
                         zmanimData = state.zmanimData
+                    )
+
+                    // Provider Selector Card
+                    ProviderSelectorCard(
+                        selectedProvider = alarmSettings.alarmProviderType,
+                        onProviderChanged = { viewModel.updateAlarmProvider(it) },
+                        onSyncToSleepAsAndroid = { viewModel.manualSyncToSleepAsAndroid() }
                     )
 
                     // Alarm Control Card
@@ -359,6 +369,140 @@ fun PermissionWarningCard(
                 modifier = Modifier.fillMaxWidth()
             ) {
                 Text(buttonText)
+            }
+        }
+    }
+}
+
+@Composable
+fun ProviderSelectorCard(
+    selectedProvider: AlarmProviderType,
+    onProviderChanged: (AlarmProviderType) -> Unit,
+    onSyncToSleepAsAndroid: () -> Unit
+) {
+    val context = LocalContext.current
+    val isSleepAsAndroidInstalled = AlarmProviderUtil.isSleepAsAndroidInstalled(context)
+
+    Card(
+        modifier = Modifier.fillMaxWidth(),
+        elevation = CardDefaults.cardElevation(defaultElevation = 4.dp)
+    ) {
+        Column(
+            modifier = Modifier.padding(16.dp),
+            verticalArrangement = Arrangement.spacedBy(12.dp)
+        ) {
+            Text(
+                text = "Alarm Provider",
+                fontSize = 20.sp,
+                fontWeight = FontWeight.Bold
+            )
+
+            Divider()
+
+            // Internal Alarm Option
+            Row(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(vertical = 4.dp),
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                RadioButton(
+                    selected = selectedProvider == AlarmProviderType.INTERNAL,
+                    onClick = { onProviderChanged(AlarmProviderType.INTERNAL) }
+                )
+                Column(modifier = Modifier.padding(start = 8.dp)) {
+                    Text(
+                        text = "Internal Alarm",
+                        fontSize = 16.sp,
+                        fontWeight = FontWeight.Medium
+                    )
+                    Text(
+                        text = "Use built-in alarm system",
+                        fontSize = 12.sp,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant
+                    )
+                }
+            }
+
+            // Sleep as Android Option
+            Row(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(vertical = 4.dp),
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                RadioButton(
+                    selected = selectedProvider == AlarmProviderType.SLEEP_AS_ANDROID,
+                    onClick = {
+                        if (isSleepAsAndroidInstalled) {
+                            onProviderChanged(AlarmProviderType.SLEEP_AS_ANDROID)
+                        }
+                    },
+                    enabled = isSleepAsAndroidInstalled
+                )
+                Column(modifier = Modifier.padding(start = 8.dp)) {
+                    Text(
+                        text = "Sleep as Android",
+                        fontSize = 16.sp,
+                        fontWeight = FontWeight.Medium,
+                        color = if (isSleepAsAndroidInstalled)
+                            MaterialTheme.colorScheme.onSurface
+                        else
+                            MaterialTheme.colorScheme.onSurfaceVariant
+                    )
+                    Text(
+                        text = if (isSleepAsAndroidInstalled)
+                            "Sync to Sleep as Android app"
+                        else
+                            "Not installed",
+                        fontSize = 12.sp,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant
+                    )
+                }
+            }
+
+            // Warning/Info based on selection
+            if (!isSleepAsAndroidInstalled && selectedProvider == AlarmProviderType.SLEEP_AS_ANDROID) {
+                Divider()
+                Surface(
+                    modifier = Modifier.fillMaxWidth(),
+                    color = MaterialTheme.colorScheme.errorContainer,
+                    shape = MaterialTheme.shapes.small
+                ) {
+                    Column(
+                        modifier = Modifier.padding(12.dp),
+                        verticalArrangement = Arrangement.spacedBy(8.dp)
+                    ) {
+                        Text(
+                            text = "⚠️ Sleep as Android not found",
+                            fontSize = 14.sp,
+                            fontWeight = FontWeight.Medium,
+                            color = MaterialTheme.colorScheme.onErrorContainer
+                        )
+                        Text(
+                            text = "Falling back to Internal Alarm. Install Sleep as Android to use this feature.",
+                            fontSize = 12.sp,
+                            color = MaterialTheme.colorScheme.onErrorContainer
+                        )
+                        Button(
+                            onClick = { AlarmProviderUtil.openSleepAsAndroidInPlayStore(context) },
+                            modifier = Modifier.fillMaxWidth()
+                        ) {
+                            Text("Install Sleep as Android")
+                        }
+                    }
+                }
+            }
+
+            // Manual Sync Button (only show when Sleep as Android is selected and installed)
+            if (selectedProvider == AlarmProviderType.SLEEP_AS_ANDROID && isSleepAsAndroidInstalled) {
+                Divider()
+                OutlinedButton(
+                    onClick = onSyncToSleepAsAndroid,
+                    modifier = Modifier.fillMaxWidth()
+                ) {
+                    Text("Sync Now to Sleep as Android")
+                }
             }
         }
     }

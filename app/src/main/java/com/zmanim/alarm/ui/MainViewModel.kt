@@ -3,6 +3,7 @@ package com.zmanim.alarm.ui
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.zmanim.alarm.data.datastore.AlarmPreferences
+import com.zmanim.alarm.data.model.AlarmProviderType
 import com.zmanim.alarm.data.model.AlarmSettings
 import com.zmanim.alarm.data.model.ZmanimData
 import com.zmanim.alarm.domain.LocationProvider
@@ -123,6 +124,54 @@ class MainViewModel @Inject constructor(
 
     fun checkExactAlarmPermission(): Boolean {
         return alarmScheduler.canScheduleExactAlarms()
+    }
+
+    fun updateAlarmProvider(providerType: AlarmProviderType) {
+        viewModelScope.launch {
+            alarmPreferences.setAlarmProviderType(providerType)
+
+            // If alarm is currently enabled, reschedule with the new provider
+            if (alarmSettings.value.isEnabled) {
+                alarmScheduler.rescheduleAlarm()
+            }
+
+            loadZmanimData()
+        }
+    }
+
+    fun manualSyncToSleepAsAndroid() {
+        viewModelScope.launch {
+            val settings = alarmSettings.value
+            if (!settings.isEnabled) {
+                _uiState.value = MainUiState.Error("Please enable the alarm first")
+                return@launch
+            }
+
+            // Temporarily switch to Sleep as Android to force a sync
+            val originalProvider = settings.alarmProviderType
+            alarmPreferences.setAlarmProviderType(AlarmProviderType.SLEEP_AS_ANDROID)
+
+            val success = alarmScheduler.rescheduleAlarm()
+
+            if (success) {
+                _uiState.value = MainUiState.Success(
+                    zmanimData = (_uiState.value as? MainUiState.Success)?.zmanimData ?: return@launch,
+                    nextAlarmTime = settings.lastScheduledAlarm
+                )
+            } else {
+                _uiState.value = MainUiState.Error("Failed to sync to Sleep as Android. Is it installed?")
+                // Revert to original provider
+                alarmPreferences.setAlarmProviderType(originalProvider)
+            }
+        }
+    }
+
+    suspend fun isCurrentProviderAvailable(): Boolean {
+        return alarmScheduler.isCurrentProviderAvailable()
+    }
+
+    suspend fun getCurrentProviderName(): String {
+        return alarmScheduler.getCurrentProviderName()
     }
 
     private fun calculateNextAlarmTime(zmanimData: ZmanimData, minutesBefore: Int): ZonedDateTime? {
