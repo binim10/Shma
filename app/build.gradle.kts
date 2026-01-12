@@ -82,8 +82,8 @@ dependencies {
     implementation("androidx.hilt:hilt-work:1.1.0")
     ksp("androidx.hilt:hilt-compiler:1.1.0")
 
-    // KosherKotlin for Zmanim calculations
-    implementation("io.github.kdroidfilter:kosherkotlin:0.2.0")
+    // KosherJava for Zmanim calculations (works perfectly with Kotlin)
+    implementation("com.kosherjava:zmanim:2.5.0")
 
     // Location Services
     implementation("com.google.android.gms:play-services-location:21.1.0")
