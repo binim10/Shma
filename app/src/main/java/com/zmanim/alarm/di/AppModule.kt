@@ -5,6 +5,8 @@ import com.zmanim.alarm.data.datastore.AlarmPreferences
 import com.zmanim.alarm.domain.LocationProvider
 import com.zmanim.alarm.domain.ZmanimCalculator
 import com.zmanim.alarm.service.AlarmScheduler
+import com.zmanim.alarm.service.provider.InternalAlarmProvider
+import com.zmanim.alarm.service.provider.SleepAsAndroidProvider
 import dagger.Module
 import dagger.Provides
 import dagger.hilt.InstallIn
@@ -40,12 +42,37 @@ object AppModule {
 
     @Provides
     @Singleton
+    fun provideInternalAlarmProvider(
+        @ApplicationContext context: Context
+    ): InternalAlarmProvider {
+        return InternalAlarmProvider(context)
+    }
+
+    @Provides
+    @Singleton
+    fun provideSleepAsAndroidProvider(
+        @ApplicationContext context: Context
+    ): SleepAsAndroidProvider {
+        return SleepAsAndroidProvider(context)
+    }
+
+    @Provides
+    @Singleton
     fun provideAlarmScheduler(
         @ApplicationContext context: Context,
         alarmPreferences: AlarmPreferences,
         zmanimCalculator: ZmanimCalculator,
-        locationProvider: LocationProvider
+        locationProvider: LocationProvider,
+        internalAlarmProvider: InternalAlarmProvider,
+        sleepAsAndroidProvider: SleepAsAndroidProvider
     ): AlarmScheduler {
-        return AlarmScheduler(context, alarmPreferences, zmanimCalculator, locationProvider)
+        return AlarmScheduler(
+            context,
+            alarmPreferences,
+            zmanimCalculator,
+            locationProvider,
+            internalAlarmProvider,
+            sleepAsAndroidProvider
+        )
     }
 }
