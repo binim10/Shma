@@ -10,6 +10,7 @@ import androidx.datastore.preferences.core.intPreferencesKey
 import androidx.datastore.preferences.core.longPreferencesKey
 import androidx.datastore.preferences.core.stringPreferencesKey
 import androidx.datastore.preferences.preferencesDataStore
+import com.zmanim.alarm.data.model.AlarmProviderType
 import com.zmanim.alarm.data.model.AlarmSettings
 import com.zmanim.alarm.data.model.LocationData
 import dagger.hilt.android.qualifiers.ApplicationContext
@@ -34,6 +35,7 @@ class AlarmPreferences @Inject constructor(
         val LAST_LONGITUDE = doublePreferencesKey("last_longitude")
         val LAST_LOCATION_NAME = stringPreferencesKey("last_location_name")
         val LAST_SCHEDULED_ALARM = longPreferencesKey("last_scheduled_alarm")
+        val ALARM_PROVIDER_TYPE = stringPreferencesKey("alarm_provider_type")
     }
 
     val alarmSettings: Flow<AlarmSettings> = context.dataStore.data.map { preferences ->
@@ -52,11 +54,19 @@ class AlarmPreferences @Inject constructor(
             ZonedDateTime.ofInstant(Instant.ofEpochMilli(it), ZoneId.systemDefault())
         }
 
+        val providerTypeString = preferences[PreferencesKeys.ALARM_PROVIDER_TYPE] ?: "INTERNAL"
+        val providerType = try {
+            AlarmProviderType.valueOf(providerTypeString)
+        } catch (e: IllegalArgumentException) {
+            AlarmProviderType.INTERNAL
+        }
+
         AlarmSettings(
             isEnabled = preferences[PreferencesKeys.IS_ENABLED] ?: false,
             minutesBefore = preferences[PreferencesKeys.MINUTES_BEFORE] ?: 30,
             lastLocation = lastLocation,
-            lastScheduledAlarm = lastScheduled
+            lastScheduledAlarm = lastScheduled,
+            alarmProviderType = providerType
         )
     }
 
@@ -91,6 +101,12 @@ class AlarmPreferences @Inject constructor(
     suspend fun clearLastScheduledAlarm() {
         context.dataStore.edit { preferences ->
             preferences.remove(PreferencesKeys.LAST_SCHEDULED_ALARM)
+        }
+    }
+
+    suspend fun setAlarmProviderType(providerType: AlarmProviderType) {
+        context.dataStore.edit { preferences ->
+            preferences[PreferencesKeys.ALARM_PROVIDER_TYPE] = providerType.name
         }
     }
 }

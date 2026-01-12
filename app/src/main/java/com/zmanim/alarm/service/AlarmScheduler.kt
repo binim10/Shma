@@ -6,9 +6,13 @@ import android.content.Context
 import android.content.Intent
 import android.os.Build
 import com.zmanim.alarm.data.datastore.AlarmPreferences
+import com.zmanim.alarm.data.model.AlarmProviderType
 import com.zmanim.alarm.domain.LocationProvider
 import com.zmanim.alarm.domain.ZmanimCalculator
 import com.zmanim.alarm.receiver.AlarmReceiver
+import com.zmanim.alarm.service.provider.AlarmProvider
+import com.zmanim.alarm.service.provider.InternalAlarmProvider
+import com.zmanim.alarm.service.provider.SleepAsAndroidProvider
 import dagger.hilt.android.qualifiers.ApplicationContext
 import kotlinx.coroutines.flow.first
 import java.time.ZonedDateTime
@@ -16,16 +20,37 @@ import javax.inject.Inject
 import javax.inject.Singleton
 
 /**
- * Service responsible for scheduling and canceling alarms using AlarmManager
+ * Service responsible for scheduling and canceling alarms using different providers
+ * (Internal AlarmManager or external apps like Sleep as Android)
  */
 @Singleton
 class AlarmScheduler @Inject constructor(
     @ApplicationContext private val context: Context,
     private val alarmPreferences: AlarmPreferences,
     private val zmanimCalculator: ZmanimCalculator,
-    private val locationProvider: LocationProvider
+    private val locationProvider: LocationProvider,
+    private val internalAlarmProvider: InternalAlarmProvider,
+    private val sleepAsAndroidProvider: SleepAsAndroidProvider
 ) {
     private val alarmManager = context.getSystemService(Context.ALARM_SERVICE) as AlarmManager
+
+    /**
+     * Gets the appropriate alarm provider based on user settings
+     */
+    private suspend fun getAlarmProvider(): AlarmProvider {
+        val settings = alarmPreferences.alarmSettings.first()
+        return when (settings.alarmProviderType) {
+            AlarmProviderType.INTERNAL -> internalAlarmProvider
+            AlarmProviderType.SLEEP_AS_ANDROID -> {
+                // If Sleep as Android is not available, fallback to internal
+                if (sleepAsAndroidProvider.isAvailable()) {
+                    sleepAsAndroidProvider
+                } else {
+                    internalAlarmProvider
+                }
+            }
+        }
+    }
 
     /**
      * Schedules the Zmanim alarm based on current settings and location
@@ -66,30 +91,17 @@ class AlarmScheduler @Inject constructor(
             } ?: return false
         }
 
-        // Schedule the alarm
-        val intent = Intent(context, AlarmReceiver::class.java).apply {
-            action = ACTION_ALARM_TRIGGER
+        // Use the appropriate provider to schedule the alarm
+        val provider = getAlarmProvider()
+        val message = "Zmanim: Kriyat Shema"
+        val success = provider.scheduleAlarm(alarmTime, message)
+
+        if (success) {
+            // Save the scheduled alarm time
+            alarmPreferences.setLastScheduledAlarm(alarmTime)
         }
 
-        val pendingIntent = PendingIntent.getBroadcast(
-            context,
-            ALARM_REQUEST_CODE,
-            intent,
-            PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE
-        )
-
-        val alarmClockInfo = AlarmManager.AlarmClockInfo(
-            alarmTime.toInstant().toEpochMilli(),
-            getPendingIntentForMainActivity()
-        )
-
-        // Use setAlarmClock for maximum precision and to show in system UI
-        alarmManager.setAlarmClock(alarmClockInfo, pendingIntent)
-
-        // Save the scheduled alarm time
-        alarmPreferences.setLastScheduledAlarm(alarmTime)
-
-        return true
+        return success
     }
 
     /**
@@ -103,20 +115,11 @@ class AlarmScheduler @Inject constructor(
     /**
      * Cancels the currently scheduled alarm
      */
-    fun cancelAlarm() {
-        val intent = Intent(context, AlarmReceiver::class.java).apply {
-            action = ACTION_ALARM_TRIGGER
-        }
-
-        val pendingIntent = PendingIntent.getBroadcast(
-            context,
-            ALARM_REQUEST_CODE,
-            intent,
-            PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE
-        )
-
-        alarmManager.cancel(pendingIntent)
-        pendingIntent.cancel()
+    suspend fun cancelAlarm() {
+        // Cancel from both providers to ensure no alarms are left
+        // This is important when switching providers or disabling alarms
+        internalAlarmProvider.cancelAlarm()
+        sleepAsAndroidProvider.cancelAlarm()
     }
 
     /**
@@ -128,6 +131,22 @@ class AlarmScheduler @Inject constructor(
         } else {
             true
         }
+    }
+
+    /**
+     * Checks if the currently selected alarm provider is available
+     */
+    suspend fun isCurrentProviderAvailable(): Boolean {
+        val provider = getAlarmProvider()
+        return provider.isAvailable()
+    }
+
+    /**
+     * Gets the name of the currently selected provider
+     */
+    suspend fun getCurrentProviderName(): String {
+        val provider = getAlarmProvider()
+        return provider.getProviderName()
     }
 
     /**
